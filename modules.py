@@ -10,9 +10,9 @@ class ResidualModuleWrapper(nn.Module):
         self.normalization = normalization(dim)
         self.module = module(dim=dim, **kwargs)
 
-    def forward(self, graph, x):
+    def forward(self, graph, x, **kwargs):
         x_res = self.normalization(x)
-        x_res = self.module(graph, x_res)
+        x_res = self.module(graph, x_res, **kwargs)
         x = x + x_res
 
         return x
@@ -56,6 +56,40 @@ class GCNModule(nn.Module):
         x = self.feed_forward_module(graph, x)
 
         return x
+
+
+class BDLModule(nn.Module):
+    def __init__(self, dim, hidden_dim_multiplier, bundle_dim, dropout, time=1, **kwargs):
+        super().__init__()
+        self.bundle_dim = bundle_dim
+        self.dim = dim
+        self.time = time
+        self.feed_forward_module = FeedForwardModule(dim=dim,
+                                                     hidden_dim_multiplier=hidden_dim_multiplier,
+                                                     dropout=dropout)
+
+    def forward(self, graph, x, node_rep):
+        num_nodes = x.shape[0]
+        degrees = graph.out_degrees().float()
+        degree_edge_products = ops.u_mul_v(graph, degrees, degrees)
+        norm_coefs = 1 / degree_edge_products ** 0.5
+
+        vector_field = x.reshape(num_nodes, -1, self.bundle_dim) # works since self.dim divisible by bundle dim
+
+        # first transform into the 'edge space'
+        vector_field = torch.einsum('abcd, abd -> abc', node_rep, vector_field)
+        h = vector_field.reshape(num_nodes, self.dim)
+
+        for _ in range(self.time):
+            h = ops.u_mul_e_sum(graph, h, norm_coefs)
+
+        vector_field = h.reshape(num_nodes, -1, self.bundle_dim)
+        vector_field = torch.einsum('abcd, abd -> abc', node_rep.transpose(2, 3), vector_field)  # inverse is transpose
+        h = vector_field.reshape(num_nodes, self.dim)
+
+        x = self.feed_forward_module(graph, h)
+        return x
+
 
 
 class SAGEModule(nn.Module):

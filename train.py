@@ -4,7 +4,7 @@ from tqdm import tqdm
 import torch
 from torch.cuda.amp import autocast, GradScaler
 
-from model import Model
+from model import Model, BDLModel
 from datasets import Dataset
 from utils import Logger, get_parameter_groups, get_lr_scheduler_with_warmup
 
@@ -22,7 +22,7 @@ def get_args():
 
     # model architecture
     parser.add_argument('--model', type=str, default='GT-sep',
-                        choices=['ResNet', 'GCN', 'SAGE', 'GAT', 'GAT-sep', 'GT', 'GT-sep'])
+                        choices=['ResNet', 'GCN', 'SAGE', 'GAT', 'GAT-sep', 'GT', 'GT-sep', 'BDL'])
     parser.add_argument('--num_layers', type=int, default=5)
     parser.add_argument('--hidden_dim', type=int, default=512)
     parser.add_argument('--hidden_dim_multiplier', type=float, default=1)
@@ -101,15 +101,28 @@ def main():
     logger = Logger(args, metric=dataset.metric, num_data_splits=dataset.num_data_splits)
 
     for run in range(1, args.num_runs + 1):
-        model = Model(model_name=args.model,
+        if args.model == "BDL":
+            model = BDLModel(model_name=args.model,
                       num_layers=args.num_layers,
                       input_dim=dataset.num_node_features,
                       hidden_dim=args.hidden_dim,
+                      bundle_dim=2,
                       output_dim=dataset.num_targets,
                       hidden_dim_multiplier=args.hidden_dim_multiplier,
                       num_heads=args.num_heads,
                       normalization=args.normalization,
-                      dropout=args.dropout)
+                      dropout=args.dropout,
+                      time=1)
+        else:
+            model = Model(model_name=args.model,
+                          num_layers=args.num_layers,
+                          input_dim=dataset.num_node_features,
+                          hidden_dim=args.hidden_dim,
+                          output_dim=dataset.num_targets,
+                          hidden_dim_multiplier=args.hidden_dim_multiplier,
+                          num_heads=args.num_heads,
+                          normalization=args.normalization,
+                          dropout=args.dropout)
 
         model.to(args.device)
 
