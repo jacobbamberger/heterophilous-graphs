@@ -86,7 +86,7 @@ class BDLModel(nn.Module):
         self.residual_modules = nn.ModuleList()
         self.orthogonal = Orthogonal(d=bundle_dim, orthogonal_map="householder")
         self.struct_encoder = Model("SAGE", 5, # TODO: add this as hyperparam
-                                    1,
+                                    input_dim,
                                     hidden_dim=bundle_dim**2*self.num_bundles*hidden_dim_multiplier,
                                     output_dim=bundle_dim**2*self.num_bundles,
                                     hidden_dim_multiplier=hidden_dim_multiplier,
