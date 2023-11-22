@@ -67,7 +67,7 @@ class Model(nn.Module):
 class BDLModel(nn.Module):
     def __init__(self, model_name, num_layers, input_dim, hidden_dim, bundle_dim, output_dim,
                  hidden_dim_multiplier, num_heads,
-                 normalization, dropout, time, num_bundles=256):
+                 normalization, dropout, time, num_bundles=None):
 
         super().__init__()
 
