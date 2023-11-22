@@ -30,9 +30,9 @@ def get_args():
     parser.add_argument('--normalization', type=str, default='LayerNorm', choices=['None', 'LayerNorm', 'BatchNorm'])
 
     # BDL params
-    parser.add_argument('--num_bundles', type=float, default=32)
-    parser.add_argument('--time', type=float, default=1)
-    parser.add_argument('--bundle_dim', type=float, default=2)
+    parser.add_argument('--num_bundles', type=int, default=32)
+    parser.add_argument('--time', type=int, default=1)
+    parser.add_argument('--bundle_dim', type=int, default=2)
 
 
 
