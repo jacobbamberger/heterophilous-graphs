@@ -29,6 +29,14 @@ def get_args():
     parser.add_argument('--num_heads', type=int, default=8)
     parser.add_argument('--normalization', type=str, default='LayerNorm', choices=['None', 'LayerNorm', 'BatchNorm'])
 
+    # BDL params
+    parser.add_argument('--num_bundles', type=float, default=32)
+    parser.add_argument('--time', type=float, default=1)
+    parser.add_argument('--bundle_dim', type=float, default=2)
+
+
+
+
     # regularization
     parser.add_argument('--dropout', type=float, default=0.2)
     parser.add_argument('--weight_decay', type=float, default=0)
@@ -106,13 +114,14 @@ def main():
                       num_layers=args.num_layers,
                       input_dim=dataset.num_node_features,
                       hidden_dim=args.hidden_dim,
-                      bundle_dim=2,
+                      bundle_dim=args.bundle_dim,
                       output_dim=dataset.num_targets,
                       hidden_dim_multiplier=args.hidden_dim_multiplier,
                       num_heads=args.num_heads,
                       normalization=args.normalization,
                       dropout=args.dropout,
-                      time=1)
+                      time=args.time,
+                      num_bundles=args.num_bundles)
         else:
             model = Model(model_name=args.model,
                           num_layers=args.num_layers,
