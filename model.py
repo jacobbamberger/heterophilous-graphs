@@ -116,7 +116,7 @@ class BDLModel(nn.Module):
 
     def forward(self, graph, x):
         num_nodes = x.shape[0]
-        enc = self.struct_encoder(graph, torch.ones([x.shape[0], 1], dtype=x.dtype, device=x.device))
+        enc = self.struct_encoder(graph, x)# torch.ones([x.shape[0], 1], dtype=x.dtype, device=x.device))
 
         x = self.input_linear(x)
         x = self.dropout(x)
