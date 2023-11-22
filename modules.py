@@ -85,7 +85,7 @@ class BDLModule(nn.Module):
             h = ops.u_mul_e_sum(graph, h, norm_coefs)
         vector_field = h.reshape(num_nodes, num_bundles, self.bundle_dim, -1)
         # vector_field = vector_field.sum(dim=0)
-        vector_field = torch.einsum('abcd, bde -> abce', node_rep.transpose(2, 3), vector_field)  # inverse is transpose
+        vector_field = torch.einsum('abcd, abde -> abce', node_rep.transpose(2, 3), vector_field)  # inverse is transpose
         h = vector_field.reshape(num_nodes, self.dim)
 
         x = self.feed_forward_module(graph, h)
