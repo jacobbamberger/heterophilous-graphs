@@ -1,7 +1,7 @@
 import torch
 from torch import nn
 from modules import (ResidualModuleWrapper, FeedForwardModule, GCNModule, SAGEModule, GATModule, GATSepModule,
-                     TransformerAttentionModule, TransformerAttentionSepModule, BDLModule)
+                     TransformerAttentionModule, TransformerAttentionSepModule, BDLModule, BDLSAGEModule)
 from bundles.orthogonal import Orthogonal
 
 MODULES = {
@@ -12,7 +12,8 @@ MODULES = {
     'GAT-sep': [GATSepModule],
     'GT': [TransformerAttentionModule, FeedForwardModule],
     'GT-sep': [TransformerAttentionSepModule, FeedForwardModule],
-    'BDL': [BDLModule]
+    'BDL': [BDLModule],
+    'BDLSAGE': [BDLSAGEModule]
 }
 
 

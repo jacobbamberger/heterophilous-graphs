@@ -115,6 +115,45 @@ class SAGEModule(nn.Module):
         return x
 
 
+class BDLSAGEModule(nn.Module):
+    def __init__(self, dim, hidden_dim_multiplier, bundle_dim, dropout, time=1, **kwargs):
+        super().__init__()
+        self.bundle_dim = bundle_dim
+        self.dim = dim
+        self.time = time
+        self.feed_forward_module = FeedForwardModule(dim=dim,
+                                                     input_dim_multiplier=2,
+                                                     hidden_dim_multiplier=hidden_dim_multiplier,
+                                                     dropout=dropout)
+
+    def forward(self, graph, x, node_rep):
+        num_nodes = x.shape[0]
+        num_bundles = node_rep.shape[1]
+        degrees = graph.out_degrees().float()
+        degree_edge_products = ops.u_mul_v(graph, degrees, degrees)
+        norm_coefs = 1 / degree_edge_products ** 0.5
+
+        vector_field = x.reshape(num_nodes, num_bundles, self.bundle_dim,
+                                 -1)  # works since self.dim divisible by bundle dim
+
+        ## Option 1:
+        # first transform into the 'edge space'
+        vector_field = torch.einsum('abcd, abde -> abce', node_rep, vector_field)
+
+        h = vector_field.reshape(num_nodes, self.dim)
+        for _ in range(self.time):
+            h = ops.u_mul_e_sum(graph, h, norm_coefs)
+        vector_field = h.reshape(num_nodes, num_bundles, self.bundle_dim, -1)
+        vector_field = torch.einsum('abcd, abde -> abce', node_rep.transpose(2, 3),
+                                    vector_field)  # inverse is transpose
+        message = vector_field.reshape(num_nodes, self.dim)
+
+        x = torch.cat([x, message], axis=1)
+
+        x = self.feed_forward_module(graph, x)
+
+        return x
+
 def _check_dim_and_num_heads_consistency(dim, num_heads):
     if dim % num_heads != 0:
         raise ValueError('Dimension mismatch: hidden_dim should be a multiple of num_heads.')
