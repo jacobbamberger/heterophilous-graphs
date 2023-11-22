@@ -67,7 +67,7 @@ class Model(nn.Module):
 class BDLModel(nn.Module):
     def __init__(self, model_name, num_layers, input_dim, hidden_dim, bundle_dim, output_dim,
                  hidden_dim_multiplier, num_heads,
-                 normalization, dropout, time, num_bundles=256):
+                 normalization, dropout, time, num_bundles=124):
 
         super().__init__()
 
@@ -86,7 +86,7 @@ class BDLModel(nn.Module):
         self.residual_modules = nn.ModuleList()
         self.orthogonal = Orthogonal(d=bundle_dim, orthogonal_map="householder")
         self.struct_encoder = Model("SAGE", 5, # TODO: add this as hyperparam
-                                    input_dim,
+                                    1,
                                     hidden_dim=bundle_dim**2*self.num_bundles*hidden_dim_multiplier,
                                     output_dim=bundle_dim**2*self.num_bundles,
                                     hidden_dim_multiplier=hidden_dim_multiplier,
@@ -116,7 +116,7 @@ class BDLModel(nn.Module):
 
     def forward(self, graph, x):
         num_nodes = x.shape[0]
-        enc = self.struct_encoder(graph, x)
+        enc = self.struct_encoder(graph, torch.ones([x.shape[0], 1], dtype=x.dtype, device=x.device))
 
         x = self.input_linear(x)
         x = self.dropout(x)
