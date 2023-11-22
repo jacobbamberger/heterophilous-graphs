@@ -67,7 +67,7 @@ class Model(nn.Module):
 class BDLModel(nn.Module):
     def __init__(self, model_name, num_layers, input_dim, hidden_dim, bundle_dim, output_dim,
                  hidden_dim_multiplier, num_heads,
-                 normalization, dropout, time, num_bundles=124):
+                 normalization, dropout, time, num_bundles=None):
 
         super().__init__()
 
@@ -116,7 +116,7 @@ class BDLModel(nn.Module):
 
     def forward(self, graph, x):
         num_nodes = x.shape[0]
-        enc = self.struct_encoder(graph, torch.ones([x.shape[0], 1], dtype=x.dtype, device=x.device))
+        enc = self.struct_encoder(graph, torch.ones([num_nodes, 1], dtype=x.dtype, device=x.device))
 
         x = self.input_linear(x)
         x = self.dropout(x)
