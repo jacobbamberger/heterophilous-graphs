@@ -67,7 +67,7 @@ class Model(nn.Module):
 class BDLModel(nn.Module):
     def __init__(self, model_name, num_layers, input_dim, hidden_dim, bundle_dim, output_dim,
                  hidden_dim_multiplier, num_heads,
-                 normalization, dropout, time):
+                 normalization, dropout, time, num_bundles=16):
 
         super().__init__()
 
@@ -75,6 +75,9 @@ class BDLModel(nn.Module):
 
         self.hidden_dim = hidden_dim
         self.bundle_dim = bundle_dim
+        if num_bundles is None:
+            num_bundles = (self.hidden_dim // self.bundle_dim),
+        self.num_bundles = num_bundles
 
         self.input_linear = nn.Linear(in_features=input_dim, out_features=hidden_dim)
         self.dropout = nn.Dropout(p=dropout)
@@ -84,8 +87,8 @@ class BDLModel(nn.Module):
         self.orthogonal = Orthogonal(d=bundle_dim, orthogonal_map="householder")
         self.struct_encoder = Model("SAGE", 5, # TODO: add this as hyperparam
                                     1,
-                                    hidden_dim=bundle_dim**2*(hidden_dim//bundle_dim)*hidden_dim_multiplier,
-                                    output_dim=bundle_dim**2*(hidden_dim//bundle_dim),
+                                    hidden_dim=bundle_dim**2*self.num_bundles*hidden_dim_multiplier,
+                                    output_dim=bundle_dim**2*self.num_bundles,
                                     hidden_dim_multiplier=hidden_dim_multiplier,
                                     normalization="None",
                                     dropout=0.2,
@@ -94,7 +97,7 @@ class BDLModel(nn.Module):
 
         for _ in range(num_layers):
             self.enc_computers.append(
-                FeedForwardModule(bundle_dim**2*(hidden_dim//bundle_dim), hidden_dim_multiplier, dropout)
+                FeedForwardModule(bundle_dim**2*self.num_bundles, hidden_dim_multiplier, dropout)
             )
             for module in MODULES[model_name]:
                 residual_module = ResidualModuleWrapper(module=module,
@@ -122,10 +125,10 @@ class BDLModel(nn.Module):
         for k, residual_module in enumerate(self.residual_modules):
             node_rep = self.enc_computers[k](graph, enc)
 
-            node_rep = node_rep.reshape(num_nodes * (self.hidden_dim // self.bundle_dim),
+            node_rep = node_rep.reshape(num_nodes * self.num_bundles,
                                         self.bundle_dim, self.bundle_dim)
             node_rep = self.orthogonal(node_rep)
-            node_rep = node_rep.reshape(num_nodes, (self.hidden_dim // self.bundle_dim),
+            node_rep = node_rep.reshape(num_nodes, self.num_bundles,
                                                     self.bundle_dim, self.bundle_dim)  # want it to be one matrix per channel per node
 
             x = residual_module(graph, x, node_rep)
