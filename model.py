@@ -73,6 +73,9 @@ class BDLModel(nn.Module):
 
         normalization = NORMALIZATION[normalization]
 
+        self.hidden_dim = hidden_dim
+        self.bundle_dim = bundle_dim
+
         self.input_linear = nn.Linear(in_features=input_dim, out_features=hidden_dim)
         self.dropout = nn.Dropout(p=dropout)
         self.act = nn.GELU()
@@ -80,11 +83,13 @@ class BDLModel(nn.Module):
         self.residual_modules = nn.ModuleList()
         self.orthogonal = Orthogonal(d=bundle_dim, orthogonal_map="householder")
         self.struct_encoder = Model("SAGE", 5, # TODO: add this as hyperparam
-                                    1, bundle_dim**2*(hidden_dim//bundle_dim)*hidden_dim_multiplier,
-                                    bundle_dim**2*(hidden_dim//bundle_dim),
-                                    hidden_dim_multiplier,
+                                    1,
+                                    hidden_dim=bundle_dim**2*(hidden_dim//bundle_dim)*hidden_dim_multiplier,
+                                    output_dim=bundle_dim**2*(hidden_dim//bundle_dim),
+                                    hidden_dim_multiplier=hidden_dim_multiplier,
                                     normalization="None",
-                                    dropout=0.2)
+                                    dropout=0.2,
+                                    num_heads=0)
         self.enc_computers = nn.ModuleList()
 
         for _ in range(num_layers):
@@ -107,6 +112,7 @@ class BDLModel(nn.Module):
         self.output_linear = nn.Linear(in_features=hidden_dim, out_features=output_dim)
 
     def forward(self, graph, x):
+        num_nodes = x.shape[0]
         enc = self.struct_encoder(graph, torch.ones([x.shape[0], 1], dtype=x.dtype, device=x.device))
 
         x = self.input_linear(x)
@@ -114,8 +120,14 @@ class BDLModel(nn.Module):
         x = self.act(x)
 
         for k, residual_module in enumerate(self.residual_modules):
-            node_rep = self.enc_computers[k](enc)
+            node_rep = self.enc_computers[k](graph, enc)
+
+            node_rep = node_rep.reshape(num_nodes * (self.hidden_dim // self.bundle_dim),
+                                        self.bundle_dim, self.bundle_dim)
             node_rep = self.orthogonal(node_rep)
+            node_rep = node_rep.reshape(num_nodes, (self.hidden_dim // self.bundle_dim),
+                                                    self.bundle_dim, self.bundle_dim)  # want it to be one matrix per channel per node
+
             x = residual_module(graph, x, node_rep)
 
         x = self.output_normalization(x)

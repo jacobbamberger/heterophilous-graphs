@@ -10,9 +10,9 @@ class ResidualModuleWrapper(nn.Module):
         self.normalization = normalization(dim)
         self.module = module(dim=dim, **kwargs)
 
-    def forward(self, graph, x, **kwargs):
+    def forward(self, graph, x, node_rep=None, **kwargs):
         x_res = self.normalization(x)
-        x_res = self.module(graph, x_res, **kwargs)
+        x_res = self.module(graph, x_res, node_rep=node_rep, **kwargs)
         x = x + x_res
 
         return x
@@ -29,7 +29,7 @@ class FeedForwardModule(nn.Module):
         self.linear_2 = nn.Linear(in_features=hidden_dim, out_features=dim)
         self.dropout_2 = nn.Dropout(p=dropout)
 
-    def forward(self, graph, x):
+    def forward(self, graph, x, node_rep=None):
         x = self.linear_1(x)
         x = self.dropout_1(x)
         x = self.act(x)
@@ -46,7 +46,7 @@ class GCNModule(nn.Module):
                                                      hidden_dim_multiplier=hidden_dim_multiplier,
                                                      dropout=dropout)
 
-    def forward(self, graph, x):
+    def forward(self, graph, x, node_rep=None):
         degrees = graph.out_degrees().float()
         degree_edge_products = ops.u_mul_v(graph, degrees, degrees)
         norm_coefs = 1 / degree_edge_products ** 0.5
@@ -100,7 +100,7 @@ class SAGEModule(nn.Module):
                                                      hidden_dim_multiplier=hidden_dim_multiplier,
                                                      dropout=dropout)
 
-    def forward(self, graph, x):
+    def forward(self, graph, x, node_rep=None):
         message = ops.copy_u_mean(graph, x)
         x = torch.cat([x, message], axis=1)
 
@@ -133,7 +133,7 @@ class GATModule(nn.Module):
                                                      hidden_dim_multiplier=hidden_dim_multiplier,
                                                      dropout=dropout)
 
-    def forward(self, graph, x):
+    def forward(self, graph, x, node_rep=None):
         x = self.input_linear(x)
 
         attn_scores_u = self.attn_linear_u(x)
@@ -171,7 +171,7 @@ class GATSepModule(nn.Module):
                                                      hidden_dim_multiplier=hidden_dim_multiplier,
                                                      dropout=dropout)
 
-    def forward(self, graph, x):
+    def forward(self, graph, x, node_rep=None):
         x = self.input_linear(x)
 
         attn_scores_u = self.attn_linear_u(x)
@@ -207,7 +207,7 @@ class TransformerAttentionModule(nn.Module):
         self.output_linear = nn.Linear(in_features=dim, out_features=dim)
         self.dropout = nn.Dropout(p=dropout)
 
-    def forward(self, graph, x):
+    def forward(self, graph, x, node_rep=None):
         queries = self.attn_query(x)
         keys = self.attn_key(x)
         values = self.attn_value(x)
@@ -244,7 +244,7 @@ class TransformerAttentionSepModule(nn.Module):
         self.output_linear = nn.Linear(in_features=dim * 2, out_features=dim)
         self.dropout = nn.Dropout(p=dropout)
 
-    def forward(self, graph, x):
+    def forward(self, graph, x, node_rep=None):
         queries = self.attn_query(x)
         keys = self.attn_key(x)
         values = self.attn_value(x)
