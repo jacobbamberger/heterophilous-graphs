@@ -8,4 +8,4 @@
 #SBATCH --gres=gpu:1
 # the -u option means 'unbuffered',
 # which should continuously write output to the .out file
-srun -u python -m train --name BDL-l5 --dataset questions --model BDLSAGE --num_layers 5 --device cuda:0 --num_bundles 8
+srun -u python train.py --name BDL-l5 --dataset questions --model BDLSAGE --num_layers 5 --device cuda:0 --num_bundles 8
