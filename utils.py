@@ -73,6 +73,7 @@ class Logger:
         with open(os.path.join(self.save_dir, 'metrics.yaml'), 'w') as file:
             yaml.safe_dump(metrics, file, sort_keys=False)
 
+
     def print_metrics_summary(self):
         with open(os.path.join(self.save_dir, 'metrics.yaml'), 'r') as file:
             metrics = yaml.safe_load(file)
@@ -82,6 +83,16 @@ class Logger:
         print(f'Val {self.metric} std: {metrics[f"val {self.metric} std"]:.4f}')
         print(f'Test {self.metric} mean: {metrics[f"test {self.metric} mean"]:.4f}')
         print(f'Test {self.metric} std: {metrics[f"test {self.metric} std"]:.4f}')
+
+    def get_metric_summary(self):
+        with open(os.path.join(self.save_dir, 'metrics.yaml'), 'r') as file:
+            metrics = yaml.safe_load(file)
+
+        # val_mean = metrics[f"val {self.metric} mean"]
+        # val_std = metrics[f"val {self.metric} std"]
+        # test_mean = metrics[f"test {self.metric} mean"]
+        # test_std = metrics[f"test {self.metric} std"]
+        return metrics
 
     @staticmethod
     def get_save_dir(base_dir, dataset, name):

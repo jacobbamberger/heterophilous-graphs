@@ -8,6 +8,8 @@ from model import Model, BDLModel
 from datasets import Dataset
 from utils import Logger, get_parameter_groups, get_lr_scheduler_with_warmup
 
+import wandb
+
 
 def get_args():
     parser = argparse.ArgumentParser()
@@ -96,7 +98,15 @@ def evaluate(model, dataset, amp=False):
 def main():
     args = get_args()
 
-    torch.manual_seed(0)
+    # Set the seed for everything
+    torch.manual_seed(213982)
+    torch.cuda.manual_seed(213982)
+    torch.cuda.manual_seed_all(213982)
+
+    wdb_run = wandb.init(project="bundles-het",
+                     group=args.dataset + "meta",
+                     name=args.model)
+    wdb_run.config.update(args)
 
     dataset = Dataset(name=args.dataset,
                       add_self_loops=(args.model in ['GCN', 'GAT', 'GT']),
@@ -157,6 +167,10 @@ def main():
         dataset.next_data_split()
 
     logger.print_metrics_summary()
+    metrics = logger.get_metric_summary()
+    wdb_run.log(metrics)
+    wdb_run.finish()
+
 
 
 if __name__ == '__main__':
