@@ -30,9 +30,9 @@ class FeedForwardModule(nn.Module):
         self.dropout_2 = nn.Dropout(p=dropout)
 
     def forward(self, graph, x, node_rep=None):
-        x = self.linear_1(x)
-        x = self.dropout_1(x)
-        x = self.act(x)
+        # x = self.linear_1(x)
+        # x = self.dropout_1(x)
+        # x = self.act(x)
         x = self.linear_2(x)
         x = self.dropout_2(x)
 
