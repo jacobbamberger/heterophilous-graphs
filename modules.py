@@ -23,7 +23,7 @@ class FeedForwardModule(nn.Module):
         super().__init__()
         input_dim = int(dim * input_dim_multiplier)
         hidden_dim = int(dim * hidden_dim_multiplier)
-        self.linear_1 = nn.Linear(in_features=input_dim, out_features=dim)
+        self.linear_1 = nn.Linear(in_features=input_dim, out_features=hidden_dim)
         self.dropout_1 = nn.Dropout(p=dropout)
         self.act = nn.GELU()
         self.linear_2 = nn.Linear(in_features=hidden_dim, out_features=dim)
@@ -32,9 +32,9 @@ class FeedForwardModule(nn.Module):
     def forward(self, graph, x, node_rep=None):
         x = self.linear_1(x)
         x = self.dropout_1(x)
-        # # x = self.act(x)
-        # x = self.linear_2(x)
-        # x = self.dropout_2(x)
+        x = self.act(x)
+        x = self.linear_2(x)
+        x = self.dropout_2(x)
 
         return x
 
