@@ -114,9 +114,8 @@ class SAGEModule(nn.Module):
 
         return x
 
-
 class BDLSAGEModule(nn.Module):
-    def __init__(self, dim, hidden_dim_multiplier, bundle_dim, dropout, time=1, **kwargs):
+    def __init__(self, dim, hidden_dim_multiplier, bundle_dim, dropout, time=1, num_att=5, **kwargs):
         super().__init__()
         self.bundle_dim = bundle_dim
         self.dim = dim
@@ -125,8 +124,9 @@ class BDLSAGEModule(nn.Module):
                                                      input_dim_multiplier=2,
                                                      hidden_dim_multiplier=hidden_dim_multiplier,
                                                      dropout=dropout)
-        attention = torch.rand([4, dim])
-        self.attention = torch.nn.Parameter(attention)
+
+        self.num_att = num_att
+        self.attention = torch.nn.Parameter(torch.rand([self.num_att, dim]))
         self.register_parameter("attention", self.attention)
         assert self.time > 20
 
@@ -145,17 +145,19 @@ class BDLSAGEModule(nn.Module):
         vector_field = torch.einsum('abcd, abde -> abce', node_rep, vector_field)
 
         h = vector_field.reshape(num_nodes, self.dim)
-        different_times = torch.empty([4, num_nodes, self.dim], device=x.device, dtype=x.dtype)
+        different_times = torch.empty([self.num_att, num_nodes, self.dim], device=x.device, dtype=x.dtype)
         for t in range(1, self.time+1):
             h = ops.u_mul_e_sum(graph, h, norm_coefs)
             if t == 1:
                 different_times[0] = h
-            elif t == 5:
+            elif t == 2:
                 different_times[1] = h
-            elif t == 20:
+            elif t == 5:
                 different_times[2] = h
-            elif t == self.time+1:
+            elif t == 20:
                 different_times[3] = h
+            elif t == self.time+1:
+                different_times[4] = h
 
         attention = self.attention.softmax(dim=0)
         h = torch.einsum('ab, acb -> cb', attention, different_times)
