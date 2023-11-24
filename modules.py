@@ -125,6 +125,10 @@ class BDLSAGEModule(nn.Module):
                                                      input_dim_multiplier=2,
                                                      hidden_dim_multiplier=hidden_dim_multiplier,
                                                      dropout=dropout)
+        attention = torch.rand([4, dim])
+        self.attention = torch.nn.Parameter(attention)
+        self.register_parameter("attention", self.attention)
+        assert self.time > 20
 
     def forward(self, graph, x, node_rep):
         num_nodes = x.shape[0]
@@ -141,8 +145,21 @@ class BDLSAGEModule(nn.Module):
         vector_field = torch.einsum('abcd, abde -> abce', node_rep, vector_field)
 
         h = vector_field.reshape(num_nodes, self.dim)
-        for _ in range(self.time):
+        different_times = torch.empty([4, num_nodes, self.dim], device=x.device, dtype=x.dtype)
+        for t in range(1, self.time+1):
             h = ops.u_mul_e_sum(graph, h, norm_coefs)
+            if t == 1:
+                different_times[0] = h
+            elif t == 5:
+                different_times[1] = h
+            elif t == 20:
+                different_times[2] = h
+            elif t == self.time+1:
+                different_times[3] = h
+
+        attention = self.attention.softmax(dim=0)
+        h = torch.einsum('ab, acb -> cb', attention, different_times)
+
         vector_field = h.reshape(num_nodes, num_bundles, self.bundle_dim, -1)
         vector_field = torch.einsum('abcd, abde -> abce', node_rep.transpose(2, 3),
                                     vector_field)  # inverse is transpose
