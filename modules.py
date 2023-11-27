@@ -126,7 +126,7 @@ class BDLSAGEModule(nn.Module):
                                                      dropout=dropout)
 
         self.num_att = num_att
-        self.attention = torch.nn.Parameter(torch.rand([self.num_att, dim]))
+        self.attention = torch.nn.Parameter(torch.rand([self.num_att]))
         self.register_parameter("attention", self.attention)
         assert self.time > 20
 
@@ -160,7 +160,7 @@ class BDLSAGEModule(nn.Module):
                 different_times[4] = h
 
         attention = self.attention.softmax(dim=0)
-        h = torch.einsum('ab, acb -> cb', attention, different_times)
+        h = torch.einsum('a, acb -> cb', attention, different_times)
 
         vector_field = h.reshape(num_nodes, num_bundles, self.bundle_dim, -1)
         vector_field = torch.einsum('abcd, abde -> abce', node_rep.transpose(2, 3),
